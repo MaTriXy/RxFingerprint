@@ -43,10 +43,17 @@ public class MainActivity extends AppCompatActivity {
 
     private Disposable fingerprintDisposable = Disposables.empty();
 
+    private RxFingerprint rxFingerprint;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        rxFingerprint = new RxFingerprint.Builder(this)
+                .encryptionMethod(EncryptionMethod.RSA)
+                .keyInvalidatedByBiometricEnrollment(true)
+                .build();
 
         this.statusText = (TextView) findViewById(R.id.status);
 
@@ -69,7 +76,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void setStatusText() {
-        if (!RxFingerprint.isAvailable(this)) {
+        if (!rxFingerprint.isAvailable(this)) {
             setStatusText("Fingerprint not available");
             return;
         }
@@ -80,11 +87,11 @@ public class MainActivity extends AppCompatActivity {
     private void authenticate() {
         setStatusText();
 
-        if (RxFingerprint.isUnavailable(this)) {
+        if (rxFingerprint.isUnavailable(this)) {
             return;
         }
 
-        fingerprintDisposable = RxFingerprint.authenticate(this)
+        fingerprintDisposable = rxFingerprint.authenticate()
                 .subscribe(fingerprintAuthenticationResult -> {
                     switch (fingerprintAuthenticationResult.getResult()) {
                         case FAILED:
@@ -106,8 +113,8 @@ public class MainActivity extends AppCompatActivity {
     private void encrypt() {
         setStatusText();
 
-        if (RxFingerprint.isUnavailable(this)) {
-            setStatusText("RxFingerprint unavailable");
+        if (rxFingerprint.isUnavailable(this)) {
+            setStatusText("rxFingerprint unavailable");
             return;
         }
 
@@ -117,7 +124,7 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
 
-        fingerprintDisposable = RxFingerprint.encrypt(EncryptionMethod.RSA, this, String.valueOf(key), toEncrypt)
+        fingerprintDisposable = rxFingerprint.encrypt(String.valueOf(key), toEncrypt)
                 .subscribe(fingerprintEncryptionResult -> {
                     switch (fingerprintEncryptionResult.getResult()) {
                         case FAILED:
@@ -135,7 +142,7 @@ public class MainActivity extends AppCompatActivity {
                     }
                 }, throwable -> {
                     //noinspection StatementWithEmptyBody
-                    if (RxFingerprint.keyInvalidated(throwable)) {
+                    if (rxFingerprint.keyInvalidated(throwable)) {
                         // The keys you wanted to use are invalidated because the user has turned off his
                         // secure lock screen or changed the fingerprints stored on the device
                         // You have to re-encrypt the data to access it
@@ -148,11 +155,11 @@ public class MainActivity extends AppCompatActivity {
     private void decrypt(String key, String encrypted) {
         setStatusText();
 
-        if (!RxFingerprint.isAvailable(this)) {
+        if (!rxFingerprint.isAvailable(this)) {
             return;
         }
 
-        fingerprintDisposable = RxFingerprint.decrypt(EncryptionMethod.RSA, this, key, encrypted)
+        fingerprintDisposable = rxFingerprint.decrypt(key, encrypted)
                 .subscribe(fingerprintDecryptionResult -> {
                     switch (fingerprintDecryptionResult.getResult()) {
                         case FAILED:
@@ -167,7 +174,7 @@ public class MainActivity extends AppCompatActivity {
                     }
                 }, throwable -> {
                     //noinspection StatementWithEmptyBody
-                    if (RxFingerprint.keyInvalidated(throwable)) {
+                    if (rxFingerprint.keyInvalidated(throwable)) {
                         // The keys you wanted to use are invalidated because the user has turned off his
                         // secure lock screen or changed the fingerprints stored on the device
                         // You have to re-encrypt the data to access it

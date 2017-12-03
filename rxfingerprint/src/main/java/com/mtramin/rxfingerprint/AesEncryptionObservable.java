@@ -51,10 +51,11 @@ class AesEncryptionObservable extends FingerprintObservable<FingerprintEncryptio
 	 * @param keyName   name of the key in the keystore
 	 * @param toEncrypt data to encrypt  @return Observable {@link FingerprintEncryptionResult}
 	 */
-	static Observable<FingerprintEncryptionResult> create(Context context, String keyName, String toEncrypt, boolean keyInvalidatedByBiometricEnrollment) {
+	static Observable<FingerprintEncryptionResult> create(Context context, String keyName, String toEncrypt, boolean keyInvalidatedByBiometricEnrollment,
+														  RxFingerprintLogger logger) {
 		try {
-			return Observable.create(new AesEncryptionObservable(new FingerprintApiWrapper(context),
-					new AesCipherProvider(context, keyName, keyInvalidatedByBiometricEnrollment),
+			return Observable.create(new AesEncryptionObservable(new FingerprintApiWrapper(context, logger),
+					new AesCipherProvider(context, keyName, keyInvalidatedByBiometricEnrollment, logger),
 					toEncrypt,
 					new Base64Provider()));
 		} catch (Exception e) {
@@ -63,8 +64,8 @@ class AesEncryptionObservable extends FingerprintObservable<FingerprintEncryptio
 	}
 
 	private AesEncryptionObservable(FingerprintApiWrapper fingerprintApiWrapper,
-							AesCipherProvider cipherProvider,
-							String toEncrypt,
+									AesCipherProvider cipherProvider,
+									String toEncrypt,
 							EncodingProvider encodingProvider) {
 		super(fingerprintApiWrapper);
 		this.cipherProvider = cipherProvider;
